@@ -1,5 +1,6 @@
 package StringMath;
 
-public enum Operation {
+enum Operation {
 	ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION,
+	LESS_THAN, GREATER_THAN, EQUAL_TO, 
 }
