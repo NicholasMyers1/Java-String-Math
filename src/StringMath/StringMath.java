@@ -1,24 +1,14 @@
 package StringMath;
 import StringMath.Operation;
 
-import java.math.BigInteger;
-
 public abstract class StringMath{
 	// final private static variables
 	final private static String TRUE = "TRUE";
 	final private static String FALSE = "FALSE";
-	final private static String DIVISION_ERROR = "ERROR: Division by zero..";
-	// public static methods:
-	public static String toStringNumber() { return "0"; }
-	public static String toStringNumber(StringNumber x) { return ( toStringNumber(x) ); }
-	public static String toStringNumber(short x) { return ( toStringNumber(Short.toString(x)) ); }
-	public static String toStringNumber(int x) { return ( toStringNumber(Integer.toString(x)) ); }
-	public static String toStringNumber(double x) { return (toStringNumber(Double.toString(x))); }
-	public static String toStringNumber(float x) { return (toStringNumber(Float.toString(x))); }
-	public static String toStringNumber(long x) { return (toStringNumber(Long.toString(x))); }
-	public static String toStringNumber(BigInteger n ){ return (toStringNumber(n.toString())); }
-	public static String toStringNumber(boolean x) { return ( x ? "1" : "0" ); }
-	public static String toStringNumber(String x) { // Deletes leading/trailing zeros, out of place decimals and negatives and non-numbers;
+	final protected static String DIVISION_OR_MODULO_ERROR = "ERROR_UNDEFINED: Division by zero..";
+	final protected static String ERROR_ATTEMPTING_TO_CALCULATE = "ERROR_CALCULATING: Attempting to calculate an erroneous number..";
+	// default static method: 
+	static String toStringNumber(String x) { // Deletes leading/trailing zeros, out of place decimals and negatives and non-numbers;
 		String stringNumberTemp = "";
 		boolean isNegative = false;
 		boolean isDecimal = false;
@@ -39,30 +29,61 @@ public abstract class StringMath{
 		} if( isNegative && !r.equals("0") ) r = "-" + r;
 		return( r.length() == 0 || r.equals(".") || r.equals("-") || r.equals("0.0") || r.equals("-0.0") || r.equals("-.") || r.equals("-0") ? "0" : 
 				r.length() > 1 && r.charAt(r.length()-2) == '.' && r.charAt(r.length()-1) == '0' ? r.substring(0, r.length()-2) : r );
-	} // ADDITION: 
-	public static String add( String x, String y ) {
-		return mathOperationParser( x, y, Operation.ADDITION );
+	} //public static methods: // ADDITION: 
+	public static String add( StringNumber x, StringNumber y ) {
+		return mathOperationParser( x.get(), y.get(), Operation.ADDITION );
 	} // SUBTRACTION: 
-	public static String sub( String x, String y ) {
-		return mathOperationParser( x, y, Operation.SUBTRACTION );
+	public static String subtract( StringNumber x, StringNumber y ) {
+		return mathOperationParser( x.get(), y.get(), Operation.SUBTRACTION );
 	} // MULTIPLICATION: 
-	public static String mult( String x, String y ) {
-		return ( toStringNumber(x).equals("0") ? "0" : mathOperationParser( x, y, Operation.MULTIPLICATION ) );
-	} // DIVISION: 
-	public static String div( String x, String y, int precisionPosition ) {
-		return ( toStringNumber(x).equals("0") &&  !toStringNumber(x).equals("0") ? "0" : mathOperationParser( x, y, Operation.DIVISION, precisionPosition ) );
+	public static String multiply( StringNumber x, StringNumber y ) {
+		return ( x.get().equals( "0" ) ? "0" : mathOperationParser( x.get(), y.get(), Operation.MULTIPLICATION ) );
+	} // DIVISION WITH PRECISION: 
+	public static String divide( StringNumber dividend, StringNumber divisor, int precisionPosition ) {
+		return ( mathOperationParser( dividend.get(), divisor.get(), Operation.DIVISION, precisionPosition < 0 ? 0 : precisionPosition ) );
 	} // LESS THAN:
-	public static boolean lessThan( String x, String y) {
-		return mathOperationParser( x, y, Operation.LESS_THAN ).equals(TRUE);
+	public static boolean lessThan( StringNumber x, StringNumber y) {
+		return mathOperationParser( x.get(), y.get(), Operation.LESS_THAN ).equals(TRUE);
+	} // LESS THAN OR EQUAL TO:
+	public static boolean lessThanOrEqualTo( StringNumber x, StringNumber y) {
+		return( mathOperationParser( x.get(), y.get(), Operation.EQUAL_TO ).equals(TRUE) || 
+				mathOperationParser( x.get(), y.get(), Operation.LESS_THAN ).equals(TRUE) );
 	} // GREATER THAN:
-	public static boolean greaterThan( String x, String y) {
-		return mathOperationParser( x, y, Operation.GREATER_THAN ).equals(TRUE);
+	public static boolean greaterThan( StringNumber x, StringNumber y) {
+		return mathOperationParser( x.get(), y.get(), Operation.GREATER_THAN ).equals(TRUE);
+	} // GREATER THAN OR EQUAL TO:
+	public static boolean greaterThanOrEqualTo( StringNumber x, StringNumber y) {
+		return( mathOperationParser( x.get(), y.get(), Operation.EQUAL_TO ).equals(TRUE) || 
+				mathOperationParser( x.get(), y.get(), Operation.GREATER_THAN ).equals(TRUE) );
 	} // EQUAL TO:
-	public static boolean equalTo( String x, String y) {
-		return mathOperationParser( x, y, Operation.EQUAL_TO ).equals(TRUE);
-	}// Local Methods: 
+	public static boolean equalTo( StringNumber x, StringNumber y) {
+		return mathOperationParser( x.get(), y.get(), Operation.EQUAL_TO ).equals(TRUE);
+	} // NOT EQUAL TO:
+	public static boolean notEqualTo( StringNumber x, StringNumber y) {
+		return mathOperationParser( x.get(), y.get(), Operation.EQUAL_TO ).equals(FALSE);
+	} // MODULO:
+	public static String mod( StringNumber dividend, StringNumber divisor ) {
+		boolean isNegative[] = { dividend.get().charAt(0) == '-', divisor.get().charAt(0) == '-' };
+		if( !dividend.get().equals("0") && !divisor.get().equals("0") && equalTo( dividend, divisor ) ) return "0";
+		else if( divisor.get().equals("0") || dividend.get().equals("0") && divisor.get().equals("0") ) return DIVISION_OR_MODULO_ERROR;
+		else if( dividend.get().equals("0") ) return "0";
+		else if( !isNegative[0] && !isNegative[1] ) {
+			return ( lessThan( dividend, divisor ) ? dividend.get() : mathOperationParser( dividend.get(), divisor.get(), Operation.MODULO, 0 ) );
+		} else if( isNegative[0] && isNegative[1] ) {
+			return ( greaterThan( dividend, divisor ) ? dividend.get() : "-" + mathOperationParser( dividend.get(), divisor.get(), Operation.MODULO, 0 ) );
+		} else if( !isNegative[0] && isNegative[1] ) {
+			return ( lessThan( new StringNumber( dividend.get().substring(1) ), new StringNumber( divisor.get().substring(1) ) ) ? 
+				add( divisor, dividend ) : 
+				add( divisor, new StringNumber( mathOperationParser( dividend.get(), divisor.get(), Operation.MODULO, 0 ) ) ) );
+		} else {
+			return ( lessThan( new StringNumber( dividend.get().substring(1) ), new StringNumber( divisor.get().substring(1) ) ) ? 
+				add( divisor, dividend ) : 
+				subtract( divisor, new StringNumber( mathOperationParser( dividend.get(), divisor.get(), Operation.MODULO, 0 ) ) ) ); }
+	} // Local Methods: 
 	private static String mathOperationParser(String a, String b, Operation operation, int...precisionPosition) {
-		String n[] = { toStringNumber(a) , toStringNumber(b) };
+		String n[] = { a, b };
+		for(int x=0;x<n.length;x++) 
+			if( n[x].equals(DIVISION_OR_MODULO_ERROR) || n[x].equals(ERROR_ATTEMPTING_TO_CALCULATE) ) return ERROR_ATTEMPTING_TO_CALCULATE;
 		// set negative if necessary, then remove the negative signs;
 		boolean isNegative[] = { n[0].charAt(0) == '-', n[1].charAt(0) == '-' };
 		// get the decimal positions if any exist and insert if necessary;
@@ -73,14 +94,14 @@ public abstract class StringMath{
 				if( n[c].charAt(d) == '.' ) { decimalPosition[c] = d; break; }
 			if( decimalPosition[c] == -1 ) { decimalPosition[c] = n[c].length(); n[c] += "."; }
 		}		
-		int lengthLeft[] = { decimalPosition[1]-1, decimalPosition[0]-1 };
-		int lengthRight[] = { n[1].length()-1-decimalPosition[1], n[0].length()-1-decimalPosition[0] };
+		int lengthLeftDecimal[] = { decimalPosition[1]-1, decimalPosition[0]-1 };
+		int lengthRightDecimal[] = { n[1].length()-1-decimalPosition[1], n[0].length()-1-decimalPosition[0] };
 		boolean isSwapped = false;
-		if( operation != Operation.DIVISION ) {
+		if( operation != Operation.DIVISION && operation != Operation.MODULO ) {
 			for(int c = 0; c < n.length; c++) { // add in correct number of zeros to each number before and after the decimal point:
-				for(int d=0; d<lengthLeft[c] && lengthLeft[0]!=lengthLeft[1]; d++)
+				for(int d=0; d<lengthLeftDecimal[c] && lengthLeftDecimal[0]!=lengthLeftDecimal[1]; d++)
 					{ n[c] = "0" + n[c]; decimalPosition[c]+=1; }
-				for(int d=0; d<lengthRight[c] && lengthRight[0]!=lengthRight[1]; d++)
+				for(int d=0; d<lengthRightDecimal[c] && lengthRightDecimal[0]!=lengthRightDecimal[1]; d++)
 					n[c] += "0";
 			}
 			for(int c=0;c<n[0].length();c++) { // swap so the largest number is on top:
@@ -90,8 +111,7 @@ public abstract class StringMath{
 					isSwapped = true; break;
 				} else if( n[0].charAt(c) > n[1].charAt(c) ) break;
 			}
-		} 
-	if ( n[0].length() == 0 && n[1].length() == 0 ) return "0"; // return 0 if necessary:
+		} if ( n[0].length() == 0 && n[1].length() == 0 ) return "0"; // return 0 if necessary:
 		String result = "";
 		switch( operation ) { // perform the appropriate function: 
 			case ADDITION: {
@@ -108,40 +128,35 @@ public abstract class StringMath{
 					result =	result.substring( 0,result.length()-decimalPositionForMultiplication ) + "." +
 								result.substring( result.length()-decimalPositionForMultiplication,result.length() );
 				return toStringNumber( isNegative[0] && !isNegative[1] || !isNegative[0] && isNegative[1] ? "-" + result : result );
-			} case DIVISION: { // divisor = n[1], dividend = n[0];
-				for(int x=0;x<n.length;x++) { 
-					if( n[x].charAt(0) == '0' ) n[x] = n[x].substring(1); }
-				boolean isDivisorADecimal = ( n[1].indexOf('.') == -1 || n[1].indexOf('.') == n[1].length()-1 ? false : true );
-				int lengthToMoveDecimalOver = ( !isDivisorADecimal ? 0 : n[1].length() - 1 - n[1].indexOf('.') );
-				if(n[0].charAt(0)=='.' && !isDivisorADecimal)
-					n[0] = '0' + n[0];
-				String divisor = toStringNumber( n[1].replace( ".", "" ) );
-				String dividend = n[0].replace( ".", "" );
-				int finalDecimalPosition = ( n[0].indexOf('.') == -1 ? 0 : n[0].indexOf('.') ) + lengthToMoveDecimalOver;
-				if( precisionPosition[0] < 0) precisionPosition[0] = 0;
-				while(	dividend.length() > 1 && divisor.length() > 1 && divisor.charAt(divisor.length()-1)=='0' && 
-						dividend.charAt(dividend.length()-1)=='0' ) {
-							divisor=divisor.substring(0, divisor.length()-1);
-							dividend=dividend.substring(0, dividend.length()-1);
-							finalDecimalPosition -= 1;
-				} result = divideFunction( divisor, dividend, precisionPosition[0]+finalDecimalPosition );
-				if( result.equals("1") || result.equals(DIVISION_ERROR) ) return result;
-				result = result.substring( 0, finalDecimalPosition ) + "." + result.substring( finalDecimalPosition );
+			} case DIVISION: case MODULO: {
+				int decimalIndex[] = { n[0].indexOf('.'), n[1].indexOf('.') };
+				int lengthtoMoveDecimalOver = ( decimalIndex[1] == -1 ? 0 : n[1].length() - 1 - decimalIndex[1] );
+				String divisor = toStringNumber ( n[1].replace( ".", "" ) ), dividend = n[0].replace( ".", "" );
+				for( int x = 0; x < lengthtoMoveDecimalOver - (n[0].replace( ".", "" ).length() - decimalIndex[0]); x++ ) dividend += "0";
+				int finalDecimalPosition = decimalIndex[0] + lengthtoMoveDecimalOver;
+				result = divideFunction( divisor, dividend, precisionPosition[0] + finalDecimalPosition, ( operation == Operation.MODULO ) );
+				if( result.equals("1") || result.equals("0") || result.equals( DIVISION_OR_MODULO_ERROR ) ) return result;
+				if( operation == Operation.MODULO ) {
+					if( lengthtoMoveDecimalOver != 0 ) { // divisor is a decimal;
+						for( int x = result.length(); x < dividend.length(); x++ ) result = "0" + result;
+						finalDecimalPosition = decimalIndex[0];
+					} else { // divisor is a whole number;
+						finalDecimalPosition = result.length();
+						for( int x = result.length(); x < finalDecimalPosition; x++ ) result += "0";
+					} return toStringNumber( result.substring( 0, finalDecimalPosition ) + "." + result.substring( finalDecimalPosition ) );
+				} result = result.substring( 0, finalDecimalPosition ) + "." + result.substring( finalDecimalPosition );
 				return toStringNumber( ( isNegative[0] && !isNegative[1] || !isNegative[0] && isNegative[1] ? "-"+result : result ) );
-			} case LESS_THAN:{ n[0] = ( isNegative[0] ? "-"+n[0] : "+"+n[0] ); n[1] = ( isNegative[1] ? "-"+n[1] : "+"+n[1] );
-				boolean neg[] = { isNegative[0], isNegative[1] };
-				if( n[0].equals( n[1] ) || isSwapped && neg[0] && !neg[1] || !isSwapped && !neg[0] && neg[1] ) return FALSE;
-				if( isSwapped && !neg[0] && neg[1] || !isSwapped && neg[0] && !neg[1] ) return TRUE;
-				if( !neg[0] && !neg[1] ) return ( isLessThan( isSwapped ? n[1] : n[0], isSwapped ? n[0] : n[1] ) ? TRUE : FALSE );
-				else /*if( neg[0] && neg[1] ) */return ( isGreaterThan( isSwapped ? n[1] : n[0], isSwapped ? n[0] : n[1] ) ? TRUE : FALSE );
-			} case GREATER_THAN:{ n[0] = ( isNegative[0] ? "-"+n[0] : "+"+n[0] ); n[1] = ( isNegative[1] ? "-"+n[1] : "+"+n[1] );
-				boolean neg[] = { isNegative[0], isNegative[1] };
-				if( n[0].equals( n[1] ) || isSwapped && !neg[0] && neg[1] || !isSwapped && neg[0] && !neg[1] ) return FALSE;
-				if( isSwapped && neg[0] && !neg[1] || !isSwapped && !neg[0] && neg[1] ) return TRUE;
-				if( neg[0] && neg[1] ) return ( isLessThan( isSwapped ? n[1] : n[0], isSwapped ? n[0] : n[1] ) ? TRUE : FALSE );
-				else /*if( !neg[0] && !neg[1] ) */return ( isGreaterThan( isSwapped ? n[1] : n[0], isSwapped ? n[0] : n[1] ) ? TRUE : FALSE );
-			} case EQUAL_TO:{ 
-				return n[0].equals( n[1] ) ? TRUE : FALSE;
+			} case LESS_THAN: case GREATER_THAN: case EQUAL_TO: {
+				n[0] = ( isNegative[0] ? "-"+n[0] : "+"+n[0] ); n[1] = ( isNegative[1] ? "-"+n[1] : "+"+n[1] );
+				if( operation == Operation.EQUAL_TO ) return ( n[0].equals( n[1] ) ? TRUE : FALSE );
+				boolean neg[] = { isNegative[0], isNegative[1] }, isLessthan = ( operation == Operation.LESS_THAN );
+				if( n[0].equals( n[1] ) || isLessthan && isSwapped && neg[0] && !neg[1] || isLessthan && !isSwapped && !neg[0] && neg[1] ||
+					!isLessthan && isSwapped && !neg[0] && neg[1] || !isLessthan && !isSwapped && neg[0] && !neg[1] ) return FALSE;
+				if(	isLessthan && isSwapped && !neg[0] && neg[1] || isLessthan && !isSwapped && neg[0] && !neg[1] ||
+					!isLessthan && isSwapped && neg[0] && !neg[1] || !isLessthan && !isSwapped && !neg[0] && neg[1] ) return TRUE;
+				if( isLessthan && !neg[0] && !neg[1] || !isLessthan && neg[0] && neg[1] ) 
+					return ( isThan( isSwapped ? n[1] : n[0], isSwapped ? n[0] : n[1], Operation.LESS_THAN ) ? TRUE : FALSE );
+				else return ( isThan( isSwapped ? n[1] : n[0], isSwapped ? n[0] : n[1], Operation.GREATER_THAN ) ? TRUE : FALSE );
 			} default: return "";
 		}
 	}
@@ -186,50 +201,46 @@ public abstract class StringMath{
 			result = (x==a.length()-1 ? 
 					iterationResult : addFunction( iterationResult, ( result.length() < iterationResult.length() ? "0" + result : result ) ));
 		} return result;
-	} private static String divideFunction(String divisor, String dividend, int precisionPosition) {
-		if( divisor.equals("0") ) return DIVISION_ERROR;
-		if( divisor.equals(dividend) ) return "1";
-		if( divisor.equals("1") ) return dividend;
-		if( dividend.equals("0") ) return "0";
+	} private static String divideFunction(String divisor, String dividend, int precisionPosition, boolean isMod) {
+		if( divisor.equals("0") || divisor.equals("0") && dividend.equals("0") ) return DIVISION_OR_MODULO_ERROR;
+		else if( dividend.equals("0") ) return "0";
+		else if( divisor.equals("1") ) return dividend;
+		else if( divisor.equals(dividend) && isMod) return "0";
 		String result = "";
 		int dividendPosition = 1;
+		int precisionLength = precisionPosition;
 		String tempDividend = dividend.substring(0, dividendPosition);
-		while( result.length() < precisionPosition ) { // loops until the result has the correct number of decimal places past the decimal;
-			String tempDivisor = divisor;
-			int count = 0;
-			String addValue = tempDivisor;
-			String previousAddValue = addValue;
-			while( isLessThan( tempDivisor, tempDividend ) && divisor.length() <= tempDividend.length() ) {  // (max 9 sub-iterations per digit);
+		while( result.length() < precisionPosition ) { // loops until precisionPosition is met;
+			String tempDivisor = divisor, addValue = tempDivisor, previousAddValue = addValue;
+			int count = 0; // the below loop loops a maximum of 9 times each iteration and loops for each digit;
+			while( isThan( tempDivisor, tempDividend, Operation.LESS_THAN ) && divisor.length() <= tempDividend.length() ) {
 				previousAddValue = tempDivisor;
 				tempDivisor = addFunction( tempDivisor, (addValue.length() < tempDivisor.length() ? addValue = "0" + addValue : addValue ) );
 				count += 1;
-			};			
-			if( !tempDivisor.equals(tempDividend) && tempDivisor.length() >= tempDividend.length() ) 
+			} if( !tempDivisor.equals(tempDividend) && tempDivisor.length() >= tempDividend.length() ) 
 				tempDivisor = ( previousAddValue.length() < tempDividend.length() ? "0" : "" ) + previousAddValue;
 			else count += 1;
-			if( !isLessThan( tempDividend, tempDivisor ) ) {
+			if( !isThan( tempDividend, tempDivisor, Operation.LESS_THAN ) ) {
 				tempDividend = subtractFunction( tempDividend, tempDivisor );
-				while( tempDividend.length() > 1 && tempDividend.charAt(0) == '0' ) tempDividend = tempDividend.substring(1);
+				while( tempDividend.length() > 1 && tempDividend.charAt(0) == '0' )
+					tempDividend = tempDividend.substring(1);
 			} tempDividend = ( tempDividend.equals("0") ? "" : tempDividend );
 			if( dividendPosition < dividend.length() ) {
 				tempDividend += ( dividend.charAt( dividendPosition ) );
 				dividendPosition += 1;
-			} else tempDividend += "0";
-			result += count;
+			} else if ( !isMod || isMod && precisionPosition > 1 ) tempDividend += "0";
+			if( isMod && precisionPosition > 1 )		precisionPosition -= 1;
+			else if( isMod && precisionPosition == 1 )	return ( !tempDividend.equals("0") ? tempDividend : dividend.substring( precisionLength ) );
+			else										result += count;
 		} return result;
-	} private static boolean isLessThan(String x, String y) { // lengths are equal with decimals, negatives if from parser;
-		if( x.equals(y) || x.length() > y.length() ) return false;
-		if( x.length() < y.length() ) return true;
-		for(int n=0;n<x.length();n++) {
-			if( x.charAt(n) < y.charAt(n) ) return true;
-			else if( x.charAt(n) > y.charAt(n) ) return false;
-		} return false;
-	} private static boolean isGreaterThan(String x, String y) { // lengths are equal with decimals, negatives if from parser;
-		if( x.equals(y) || x.length() < y.length() ) return false;
-		if( x.length() > y.length() ) return true;
-		for(int n=0;n<x.length();n++) {
-			if( x.charAt(n) > y.charAt(n) ) return true;
-			else if( x.charAt(n) < y.charAt(n) ) return false;
+	} private static boolean isThan(String x, String y, Operation lessThan) { // lengths are equal with decimals and negatives if from parser;
+		boolean less = ( lessThan == Operation.LESS_THAN );
+		if( lessThan != Operation.LESS_THAN && lessThan != Operation.GREATER_THAN ) return false;
+		if( x.equals(y) || x.length() > y.length() && less || !less && x.length() < y.length() ) return false;
+		if( x.length() < y.length() && less || !less && x.length() > y.length() ) return true;
+		for( int n = 0; n < x.length(); n++ ) {
+			if( x.charAt(n) < y.charAt(n) && less || !less && x.charAt(n) > y.charAt(n) ) return true;
+			else if( x.charAt(n) > y.charAt(n) && less || !less && x.charAt(n) < y.charAt(n) ) return false;
 		} return false;
 	}
 }
